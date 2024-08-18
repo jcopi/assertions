@@ -3,6 +3,7 @@ package assertions
 import (
 	"cmp"
 	"reflect"
+	"runtime/debug"
 	"testing"
 )
 
@@ -153,5 +154,43 @@ func Within[T cmp.Ordered](tb testing.TB, minT, maxT, input T) {
 
 	if input < minT || input > maxT {
 		errorfNow(tb, failureFormat, minT, maxT, input)
+		return
+	}
+}
+
+func panicHandler(fn func()) (panicked bool, msg any, stack string) {
+	panicked = true
+
+	defer func() {
+		msg = recover()
+		if panicked {
+			stack = string(debug.Stack())
+		}
+	}()
+
+	fn()
+	panicked = false
+	return
+}
+
+// Panics asserts that the provided function panics during execution
+func Panics(tb testing.TB, fn func()) {
+	const failureFormat = "function %#v did not panic\n > revcovered value: %#v\n"
+
+	panicked, recovered, _ := panicHandler(fn)
+	if !panicked {
+		errorfNow(tb, failureFormat, fn, recovered)
+		return
+	}
+}
+
+// NotPanics asserts that the provided function does not panic durion execution
+func NotPanics(tb testing.TB, fn func()) {
+	const failureFormat = "function %#v panic\n > revcovered value: %#v\n > stack: %v\n"
+
+	panicked, recovered, stack := panicHandler(fn)
+	if panicked {
+		errorfNow(tb, failureFormat, fn, recovered, stack)
+		return
 	}
 }
