@@ -12,11 +12,22 @@ func errorfNow(tb testing.TB, format string, args ...any) {
 	tb.FailNow()
 }
 
+// NoError asserts that the input error is nil
 func NoError(tb testing.TB, input error) {
 	const failureFormat = "Unexpected error occurred\n > Error: %v\n"
 
 	if input != nil {
 		errorfNow(tb, failureFormat, input)
+		return
+	}
+}
+
+// Error asserts that the input error is non-nil
+func Error(tb testing.TB, input error) {
+	const failureFormat = "expected error did not occur\n"
+
+	if input == nil {
+		errorfNow(tb, failureFormat)
 		return
 	}
 }
